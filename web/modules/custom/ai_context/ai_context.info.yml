@@ -1,0 +1,12 @@
+name: AI Context
+type: module
+description: Provides context-aware prompt generation for AI module with Drupal content, internal links, and site metadata.
+package: AI
+core_version_requirement: ^10.4 || ^11
+
+dependencies:
+  - drupal:node
+  - drupal:taxonomy
+  - ai:ai
+  - ai:ai_ckeditor
+

@@ -1,0 +1,41 @@
+services:
+  ai_context.context_service:
+    class: Drupal\ai_context\Service\DrupalContextService
+    arguments:
+      - '@cache.ai'
+      - '@entity_type.manager'
+      - '@config.factory'
+      - '@current_user'
+      - '@module_handler'
+
+  ai_context.ckeditor_subscriber:
+    class: Drupal\ai_context\EventSubscriber\CKEditorContextSubscriber
+    arguments:
+      - '@ai_context.context_service'
+      - '@entity_type.manager'
+      - '@logger.factory'
+    tags:
+      - { name: event_subscriber }
+
+  ai_context.site_config_collector:
+    class: Drupal\ai_context\ContextCollector\SiteConfigCollector
+    arguments:
+      - '@config.factory'
+    tags:
+      - { name: ai_context_collector }
+
+  ai_context.node_metadata_collector:
+    class: Drupal\ai_context\ContextCollector\NodeMetadataCollector
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
+    tags:
+      - { name: ai_context_collector }
+
+  ai_context.taxonomy_collector:
+    class: Drupal\ai_context\ContextCollector\TaxonomyCollector
+    arguments:
+      - '@entity_type.manager'
+    tags:
+      - { name: ai_context_collector }
+
