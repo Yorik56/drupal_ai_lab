@@ -1,0 +1,21 @@
+# Drupal
+/web/sites/default/files
+/web/core
+/web/modules/contrib
+/web/profiles/contrib
+/web/sites/default/files
+/vendor/
+# DDEV - Ignorer les fichiers générés et données locales
+.ddev/.*.yaml
+.ddev/db_snapshots/
+.ddev/.importdb/
+.ddev/.downloads/
+.ddev/mysql/
+.ddev/traefik/
+.ddev/xhprof/
+.ddev/.homeadditions/
+.ddev/.dbimageBuild/
+.ddev/.webimageBuild/
+# Editor
+.editorconfig
+
