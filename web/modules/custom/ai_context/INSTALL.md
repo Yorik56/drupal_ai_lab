@@ -88,18 +88,18 @@ ddev exec php web/test_ai_context.php
 Run the unit tests:
 
 ```bash
-ddev exec ../vendor/bin/phpunit web/modules/custom/ai_context/tests/src/Unit
+ddev exec vendor/bin/phpunit -c web/core web/modules/custom/ai_context/tests/src/Unit/
 ```
 
 Expected output:
 ```
-PHPUnit 9.x.x
+PHPUnit 11.5.43 by Sebastian Bergmann and contributors.
 
-.....                                                       5 / 5 (100%)
+......                                                      6 / 6 (100%)
 
-Time: 00:00.123, Memory: 10.00 MB
+Time: 00:00.027, Memory: 6.00 MB
 
-OK (5 tests, 10 assertions)
+OK (6 tests, 27 assertions)
 ```
 
 ## Troubleshooting

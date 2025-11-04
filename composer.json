@@ -103,5 +103,18 @@
                 "      composer remove drupal/core-project-message"
             ]
         }
+    },
+    "autoload": {
+        "psr-4": {
+            "Drupal\\ai_context\\": "web/modules/custom/ai_context/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Drupal\\Tests\\ai_context\\": "web/modules/custom/ai_context/tests/src/"
+        }
+    },
+    "require-dev": {
+        "drupal/core-dev": "^11.2"
     }
 }

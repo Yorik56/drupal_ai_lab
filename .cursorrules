@@ -35,6 +35,7 @@ rules:
   - follow AI project contribution standards from https://www.drupal.org/project/ai
 
   # --- Documentation and formatting ---
+  - dont write documentation unless it is requested
   - align PHPDoc with Drupal core documentation standards
   - document only what is not self-explanatory
   - format code automatically on save (PSR-12 compatible)

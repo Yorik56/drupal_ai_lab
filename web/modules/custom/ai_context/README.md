@@ -156,11 +156,11 @@ services:
 ### Running Tests
 
 ```bash
-# Unit tests
-../../../vendor/bin/phpunit web/modules/custom/ai_context/tests/src/Unit
+# Unit tests (from project root)
+ddev exec vendor/bin/phpunit -c web/core web/modules/custom/ai_context/tests/src/Unit/
 
-# Kernel tests
-../../../vendor/bin/phpunit web/modules/custom/ai_context/tests/src/Kernel
+# Kernel tests (when implemented)
+ddev exec vendor/bin/phpunit -c web/core web/modules/custom/ai_context/tests/src/Kernel/
 ```
 
 ## Roadmap
