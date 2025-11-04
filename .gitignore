@@ -2,6 +2,7 @@
 /web/sites/default/files
 /web/core
 /web/modules/contrib
+/web/themes/contrib
 /web/profiles/contrib
 /web/sites/default/files
 /vendor/
