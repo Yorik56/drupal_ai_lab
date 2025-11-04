@@ -881,6 +881,13 @@ if (getenv('IS_DDEV_PROJECT') == 'true' && file_exists(__DIR__ . '/settings.ddev
 }
 
 /**
+ * Load development settings.
+ */
+if (getenv('IS_DDEV_PROJECT') == 'true' && file_exists($app_root . '/' . $site_path . '/settings.dev.php')) {
+  include $app_root . '/' . $site_path . '/settings.dev.php';
+}
+
+/**
  * Load local development override configuration, if available.
  *
  * Create a settings.local.php file to override variables on secondary (staging,
