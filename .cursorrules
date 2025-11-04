@@ -1,0 +1,46 @@
+rules:
+  # --- General style ---
+  - use English only in code, comments, and documentation
+  - keep comments minimal and focused
+  - follow Drupal coding standards and best practices
+  - always include strict typing declarations in PHP files
+  - prefer dependency injection over static calls
+  - use Drupal service container instead of global functions when possible
+  - ensure code passes phpcs with Drupal and DrupalPractice standards
+  - ensure phpstan level 8 or higher passes without errors
+  - commit messages must follow "Issue #[number]: Short description" format
+
+  # --- Structure and architecture ---
+  - follow the structure and conventions used in drupal/ai module
+  - create plugins under src/Plugin using appropriate plugin types
+  - implement interfaces when extending Drupal core systems
+  - document public methods with concise PHPDoc blocks
+  - prefer configuration and services over hardcoded values
+  - follow Drupal's plugin manager pattern when introducing new extensibility points
+  - for new APIs, mirror patterns from AI Assistant API or FunctionCall plugins
+
+  # --- Testing and validation ---
+  - write unit tests for all new classes
+  - write kernel or functional tests for integration logic
+  - ensure tests follow Drupal test namespaces and annotations
+  - test configuration forms using FunctionalJavascript test when needed
+  - use descriptive and minimal test method names
+
+  # --- Contribution workflow ---
+  - reference related Drupal.org issue numbers in commits
+  - maintain consistency with the AI module issue fork workflow
+  - include only necessary code changes per issue
+  - update issue status properly (Needs work, Needs review, RTBC, etc.)
+  - avoid pushing unrelated formatting changes
+  - follow AI project contribution standards from https://www.drupal.org/project/ai
+
+  # --- Documentation and formatting ---
+  - align PHPDoc with Drupal core documentation standards
+  - document only what is not self-explanatory
+  - format code automatically on save (PSR-12 compatible)
+  - avoid inline comments unless critical for understanding logic
+
+  # --- Frontend (if applicable) ---
+  - use SASS indented syntax for all CSS code
+  - follow Drupal theme structure and naming conventions
+  - keep JS minimal, modular, and ES6 compliant
