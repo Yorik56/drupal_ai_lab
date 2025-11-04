@@ -80,6 +80,39 @@
 - [ ] Documenter le hook dans le developer guide
 - [ ] Ajouter des exemples dans `docs/examples/`
 
+### Intégration AI CKEditor (Phase 1)
+
+- [ ] Créer un event subscriber pour `ai_ckeditor.pre_request`
+  - [ ] Intercepter les requêtes dans `AiRequest::doRequest()`
+  - [ ] Injecter le service `ai.drupal_context`
+- [ ] Enrichir le prompt avant l'envoi au provider (ligne 140-146)
+  - [ ] Détecter le contexte d'édition (entity type, bundle, field)
+  - [ ] Collecter le contexte Drupal pertinent
+  - [ ] Ajouter le contexte au system prompt ou user prompt
+- [ ] Gérer les données du formulaire d'édition
+  - [ ] Extraire l'entity en cours d'édition depuis le `Request`
+  - [ ] Collecter métadonnées de l'entity (titre, type, taxonomies)
+  - [ ] Filtrer selon permissions de l'utilisateur actuel
+- [ ] Configuration par plugin CKEditor
+  - [ ] Permettre d'activer/désactiver le contexte par plugin
+  - [ ] Configurer quels collecteurs utiliser par plugin
+  - [ ] Ajouter options dans `AiCKEditorPluginBase`
+
+### Tests intégration CKEditor (Phase 1)
+
+- [ ] Tests du subscriber de pré-requête
+- [ ] Tests de l'enrichissement de prompts dans CKEditor
+- [ ] Tests avec différents plugins CKEditor (Tone, Summarize, etc.)
+- [ ] Tests de permissions et filtrage de sécurité
+- [ ] Tests de performance avec contexte injecté
+
+### Documentation intégration CKEditor (Phase 1)
+
+- [ ] Documenter l'event `ai_ckeditor.pre_request`
+- [ ] Exemples de contexte injecté dans CKEditor
+- [ ] Guide de configuration par plugin CKEditor
+- [ ] Screenshots de l'amélioration avec/sans contexte
+
 ## Phase 2 : Extension (Plugin System)
 
 ### Architecture de plugins
@@ -196,6 +229,42 @@
 - [ ] Documenter les use cases
 - [ ] Créer des templates de configuration
 
+### Intégration AI CKEditor avancée (Phase 2)
+
+- [ ] Enrichissement contextuel par type de plugin
+  - [ ] Plugin Tone : injecter exemples de ton du site existant
+  - [ ] Plugin Summarize : fournir structure de résumés du site
+  - [ ] Plugin Translate : fournir glossaire de termes du site
+  - [ ] Plugin Completion : suggérer liens internes pertinents
+- [ ] Contexte de contenu existant
+  - [ ] Analyser le contenu déjà saisi dans l'éditeur
+  - [ ] Identifier les entités mentionnées
+  - [ ] Suggérer des liens internes automatiquement
+  - [ ] Détecter les termes de taxonomie pertinents
+- [ ] Interface de sélection de contexte
+  - [ ] Ajouter UI pour choisir les collecteurs actifs
+  - [ ] Prévisualisation du contexte qui sera envoyé
+  - [ ] Indicateur visuel du contexte actif
+- [ ] Optimisation des prompts CKEditor
+  - [ ] Templates de prompts context-aware par plugin
+  - [ ] Variables de substitution pour le contexte
+  - [ ] Raccourcis pour contexte fréquent
+
+### Tests intégration CKEditor avancée (Phase 2)
+
+- [ ] Tests par type de plugin (Tone, Summarize, etc.)
+- [ ] Tests de détection d'entités dans le contenu
+- [ ] Tests de suggestions de liens internes
+- [ ] Tests de l'UI de sélection de contexte
+- [ ] Tests de performance avec contexte étendu
+
+### Documentation intégration CKEditor avancée (Phase 2)
+
+- [ ] Guide d'utilisation par plugin
+- [ ] Exemples de prompts optimisés
+- [ ] Vidéos de démonstration
+- [ ] Best practices pour chaque type de contenu
+
 ### Intégration MCP (optionnel)
 
 - [ ] Évaluer la pertinence de MCP (Model Context Protocol)
@@ -309,6 +378,9 @@
 - [ ] Meilleure optimisation SEO des contenus générés
 - [ ] Feedback positif de la communauté
 - [ ] Adoption par d'autres modules (ai_automators, seo_ai)
+- [ ] Amélioration de la pertinence des suggestions CKEditor AI
+- [ ] Génération automatique de liens internes contextuels
+- [ ] Respect du ton et style éditorial du site dans CKEditor
 
 ## Notes importantes
 
@@ -329,4 +401,103 @@
 - Sécurité : filtrage dès Phase 1
 - Scope creep : strict respect des phases
 - Compatibilité : tests sur Drupal 10.4+ et 11+
+
+## Notes techniques
+
+### Point d'interception CKEditor
+
+Le controller `Drupal\ai_ckeditor\Controller\AiRequest::doRequest()` est le point d'entrée pour toutes les requêtes CKEditor AI.
+
+**Ligne 140-146** : Construction du `ChatInput` et du system prompt
+```php
+$messages = new ChatInput([
+  new ChatMessage('user', $data->prompt),
+]);
+$messages->setStreamedOutput(TRUE);
+$messages->setSystemPrompt('You are helpful website assistant...');
+```
+
+**Stratégies d'interception :**
+
+1. **Event Subscriber** (Recommandé)
+   - Créer un événement `ai_ckeditor.pre_request` avant la ligne 140
+   - Permettre d'altérer `$data->prompt` et le system prompt
+   - Injecter le contexte Drupal de manière propre
+
+2. **Service Decorator**
+   - Décorer `AiRequest` pour wrapper `doRequest()`
+   - Plus invasif mais plus de contrôle
+
+3. **Hook alter** (Legacy)
+   - Utiliser `hook_ai_ckeditor_prompt_alter()`
+   - Moins performant mais simple
+
+**Contexte disponible dans le Request :**
+- `$editor` : EditorInterface avec format et settings
+- `$ai_ckeditor_plugin` : Plugin CKEditor actif (Tone, Summarize, etc.)
+- `$request` : Request HTTP contenant potentiellement l'entity_id, field_name
+
+**Extraction du contexte d'édition :**
+```php
+// À implémenter dans le subscriber
+$content = $request->request->get('content'); // Contenu déjà saisi
+$entity_type = $request->request->get('entity_type'); // Si fourni par JS
+$entity_id = $request->request->get('entity_id'); // Si fourni par JS
+$field_name = $request->request->get('field_name'); // Si fourni par JS
+```
+
+**Injection du contexte :**
+```php
+// Dans le subscriber
+$context = $this->drupalContextService->collectContext([
+  'entity_type' => $entity_type,
+  'entity_id' => $entity_id,
+  'plugin' => $ai_ckeditor_plugin->getPluginId(),
+]);
+
+$enriched_prompt = $this->drupalContextService->enrichPrompt(
+  $data->prompt,
+  $context
+);
+```
+
+### Modifications JavaScript nécessaires
+
+Pour améliorer le contexte, modifier les plugins CKEditor JS pour envoyer plus de données :
+
+**Fichier** : `ai_ckeditor/js/ckeditor5_plugins/*/src/aicommand.js`
+
+```javascript
+// Ajouter au payload AJAX
+fetch(url, {
+  method: 'POST',
+  body: JSON.stringify({
+    prompt: prompt,
+    content: editor.getData(), // Contenu actuel
+    // Ajouter ces données si disponibles dans Drupal.settings :
+    entity_type: drupalSettings.entity_type,
+    entity_id: drupalSettings.entity_id,
+    field_name: drupalSettings.field_name
+  })
+});
+```
+
+### Performance et caching
+
+**Cache keys par contexte :**
+- Site config : `ai_context:site`
+- Node : `ai_context:node:{nid}`
+- Taxonomy : `ai_context:taxonomy:{tid}`
+- Links : `ai_context:links:{nid}`
+
+**Cache max-age recommandé :**
+- Site config : 24h (rarement change)
+- Node metadata : 1h (change modérément)
+- Internal links : 6h (change peu fréquemment)
+- SEO metadata : 1h
+
+**Invalidation :**
+- Invalider `ai_context:node:{nid}` lors de la sauvegarde du node
+- Invalider `ai_context:links:{nid}` lors de modifications de liens
+- Utiliser `Cache::invalidateTags()` dans les hooks appropriés
 
