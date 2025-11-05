@@ -30,8 +30,11 @@ module:
   help: 0
   history: 0
   image: 0
+  jsonrpc: 0
   key: 0
   link: 0
+  mcp: 0
+  mcp_studio: 0
   menu_link_content: 0
   menu_ui: 0
   mysql: 0
