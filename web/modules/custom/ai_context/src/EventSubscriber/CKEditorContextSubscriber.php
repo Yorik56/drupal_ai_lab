@@ -59,12 +59,24 @@ class CKEditorContextSubscriber implements EventSubscriberInterface {
    */
   public function onRequest(RequestEvent $event): void {
     $request = $event->getRequest();
-    $route_name = $request->attributes->get('_route');
+    $path = $request->getPathInfo();
 
-    // Only process AI CKEditor requests.
-    if ($route_name !== 'ai_ckeditor.do_request') {
+    // DEBUG: Log all requests to see what routes are called.
+    if (strpos($path, 'ai-ckeditor') !== FALSE) {
+      $this->logger->warning('🔍 AI Context Debug - Path: @path', [
+        '@path' => $path,
+      ]);
+    }
+
+    // Only process AI CKEditor requests - check path instead of route name.
+    // Pattern: /api/ai-ckeditor/request/{editor}/{plugin}
+    if (!preg_match('#^/api/ai-ckeditor/request/#', $path)) {
       return;
     }
+
+    $this->logger->warning('✅ AI Context - Processing CKEditor request for path: @path', [
+      '@path' => $path,
+    ]);
 
     try {
       // Get the request data.
@@ -121,7 +133,7 @@ class CKEditorContextSubscriber implements EventSubscriberInterface {
         $property->setAccessible(TRUE);
         $property->setValue($request, $new_content);
 
-        $this->logger->info('Context enrichment applied to CKEditor AI request for plugin: @plugin', [
+        $this->logger->warning('🎉 AI Context - Context enrichment applied to CKEditor AI request for plugin: @plugin', [
           '@plugin' => $options['plugin'] ?? 'unknown',
         ]);
       }
