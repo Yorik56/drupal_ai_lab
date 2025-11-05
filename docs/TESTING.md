@@ -97,7 +97,7 @@ ddev drush watchdog:show --count=20
 ddev drush eval "print_r(array_keys(\Drupal::service('plugin.manager.mcp')->getDefinitions()));"
 ```
 
-### Tester les outils MCP
+### Tester les outils MCP DrupalContext
 
 ```bash
 # get_current_context
@@ -114,6 +114,40 @@ ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('d
 
 ```bash
 ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('drupal_context'); \$r = \$p->readResource('drupal://context/site'); echo \$r[0]->text;"
+```
+
+## Tests Search API (Phase 3)
+
+### Vérifier installation Search API
+
+```bash
+ddev drush pm:list | grep search_api
+```
+
+### Lister les index Search API
+
+```bash
+ddev drush search-api:list
+```
+
+### Reindexer le contenu
+
+```bash
+ddev drush search-api:index
+```
+
+### Tester l'outil MCP SearchApiContent
+
+```bash
+# search_drupal_content (une fois implémenté)
+ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('search_api_content'); \$r = \$p->executeTool('search_drupal_content', ['query' => 'drupal ai', 'limit' => 5]); echo \$r['content'][0]['text'];"
+```
+
+### Vérifier performance de recherche
+
+```bash
+# Mesurer le temps de recherche
+ddev drush eval "\$start = microtime(true); \$index = \Drupal\search_api\Entity\Index::load('content'); \$query = \$index->query(); \$query->keys('test'); \$results = \$query->execute(); echo 'Time: ' . round((microtime(true) - \$start) * 1000, 2) . 'ms, Results: ' . \$results->getResultCount();"
 ```
 
 ## Standards de code

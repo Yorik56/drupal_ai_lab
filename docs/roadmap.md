@@ -12,6 +12,7 @@
 
 Phase 1 MVP : Complète et validée en production
 Phase 2 MCP Integration : Complète et fonctionnelle
+Phase 3 MCP + Search API : En cours de planification
 
 ## Module MCP - Impact majeur
 
@@ -123,7 +124,124 @@ Tous les outils testés via CLI et validés fonctionnels.
 
 Code : 377 lignes total
 
-## Phase 3 - Production & Contribution
+## Phase 3 - MCP + Search API (En cours)
+
+### Vision stratégique
+
+Refonte complète de l'approche pour adopter une architecture MCP pure, éliminant l'injection automatique de contexte au profit d'une approche intelligente à la demande pilotée par l'IA.
+
+### Problématique identifiée
+
+**Limitation actuelle** : `collectAvailableContent()` retourne les 10 derniers contenus modifiés sans intelligence contextuelle. Avec 15 000+ articles, cette approche est inefficace et non pertinente.
+
+**Solution MCP native** : Le module MCP Content offre `search-content` avec filtres CONTAINS, mais utilise SQL LIKE qui n'est pas optimisé pour la recherche full-text à grande échelle.
+
+### Architecture cible
+
+```
+User dans CKEditor → Demande AI → Submit
+         ↓
+Requête vers AI Provider (OpenAI, Claude, etc.)
+         ↓
+IA découvre outils MCP disponibles
+         ↓
+IA DÉCIDE d'appeler search_drupal_content
+Arguments: {keywords: [...], content_type: [...], limit: N}
+         ↓
+Plugin MCP SearchApiContent
+  → Recherche via Search API
+  → Scoring, stemming, pertinence
+  → Filtres intelligents
+         ↓
+IA reçoit contenus pertinents + URLs + extraits
+         ↓
+IA génère contenu formaté avec liens internes intelligents
+```
+
+### Objectifs Phase 3
+
+**1. Installation et configuration Search API**
+- Installer Search API + Search API DB (ou Solr)
+- Créer index sur nodes (title + body + taxonomies)
+- Configurer processors : HTML filter, Stemming, Stop words, Tokenizer
+- Configurer backend : Database avec full-text index (ou Solr pour performance ultime)
+
+**2. Créer plugin MCP SearchApiContent**
+- Path : `web/modules/custom/ai_context/src/Plugin/Mcp/SearchApiContent.php`
+- Outil : `search_drupal_content`
+- Input schema :
+  - `query` (string) : Requête de recherche full-text
+  - `content_types` (array, optional) : Filtrer par types de contenu
+  - `taxonomies` (array, optional) : Filtrer par termes de taxonomie
+  - `limit` (int, default 10) : Nombre de résultats
+  - `fields` (array, optional) : Champs à retourner
+- Output : Résultats avec score, titre, URL, extrait, taxonomies
+
+**3. Vérifier intégration AI ↔ MCP**
+- Analyser comment AI CKEditor expose les outils MCP aux providers
+- Vérifier si OpenAI/Claude reçoivent la liste des tools disponibles
+- Tester le flow complet : CKEditor → AI → MCP tool call → Résultat
+
+**4. Simplifier CKEditorContextSubscriber**
+- **Retirer** : `collectAvailableContent()` du contexte automatique
+- **Garder** : Informations de base du site (nom, slogan)
+- **Garder** : Entity context si disponible (node en cours d'édition)
+- **Objectif** : Contexte minimal, laisser l'IA décider quand chercher
+
+**5. Améliorer DrupalContext MCP**
+- Garder les outils actuels (get_related_content, suggest_internal_links, analyze_content_seo, get_content_style)
+- Ces outils restent utiles pour des analyses spécifiques
+- Mais pour la recherche générale : déléguer à SearchApiContent
+
+### Avantages de l'approche
+
+**Performance**
+- Search API avec index optimisé : < 50ms même sur 100k+ articles
+- Pas de scan full table
+- Cache des résultats de recherche
+
+**Pertinence**
+- Scoring intelligent basé sur TF-IDF ou BM25
+- Stemming : "running" trouve "run", "runner"
+- Stop words : ignore "le", "la", "the", "a"
+- Boost sur certains champs (titre > body)
+
+**Scalabilité**
+- Fonctionne avec des millions d'articles
+- Facettes pour affiner les résultats
+- Pagination native
+
+**Intelligence**
+- L'IA décide QUAND chercher (pas de contexte gaspillé)
+- L'IA formule LA BONNE REQUÊTE (extraction de keywords intelligente)
+- L'IA utilise LES BONS FILTRES (content_type, taxonomies)
+
+**Économie de tokens**
+- Plus d'envoi de 10 contenus random à chaque requête
+- Contexte à la demande uniquement
+- Réduction significative des coûts API
+
+### Architecture hybride finale
+
+**Contexte automatique léger (CKEditor)**
+- Nom et slogan du site
+- Informations du node en cours (si disponible)
+- **~200 tokens max**
+
+**Outils MCP à la demande**
+- `search_drupal_content` : Recherche intelligente via Search API
+- `get_related_content` : Contenus similaires par taxonomies
+- `suggest_internal_links` : Suggestions de liens internes
+- `analyze_content_seo` : Analyse SEO
+- `get_content_style` : Analyse du style éditorial
+
+**Résultat** : Best of both worlds
+- Contexte de base instantané
+- Recherche intelligente à la demande
+- Performance optimale
+- Pertinence maximale
+
+## Phase 4 - Production & Contribution
 
 ### Améliorations prévues
 
@@ -202,7 +320,9 @@ Les deux systèmes sont complémentaires et non redondants.
 
 ## Métriques
 
-Performance : < 1ms avec cache (3.5x plus rapide)
+Performance actuelle : < 1ms avec cache (3.5x plus rapide)
+Performance cible Phase 3 : < 50ms avec Search API sur 100k+ articles
 Tests : 6 tests unitaires, 100% pass
-Code : 1177 lignes total (Phase 1 + Phase 2)
-Économie : 85% code, 95% temps vs estimation initiale
+Code Phase 1 + 2 : 1177 lignes total
+Économie Phase 2 : 85% code, 95% temps vs estimation initiale
+Architecture : Hybride MCP (contexte léger + outils à la demande)

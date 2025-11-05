@@ -2,7 +2,7 @@
 
 ## Description
 
-Module Drupal qui enrichit automatiquement les requêtes vers les fournisseurs d'IA avec du contexte Drupal pertinent, éliminant les hallucinations de liens et améliorant la pertinence des générations de contenu.
+Module Drupal qui fournit un contexte Drupal intelligent aux IA via le Model Context Protocol (MCP), permettant aux IA de rechercher et utiliser du contenu pertinent à la demande plutôt que de recevoir du contexte non ciblé. Élimine les hallucinations de liens et améliore drastiquement la pertinence des générations de contenu.
 
 ## Problème résolu
 
@@ -14,31 +14,52 @@ Les LLMs génèrent du contenu sans connaissance du site Drupal :
 
 ## Solution implémentée
 
-### Enrichissement automatique transparent
+### Architecture hybride MCP
 
-Interception des requêtes AI CKEditor via event subscriber et injection de contexte Drupal avant envoi au fournisseur.
+Combinaison de contexte léger automatique et d'outils MCP intelligents à la demande.
 
-### Contexte injecté
+### Contexte automatique minimal
 
 ```
 DRUPAL SITE CONTEXT:
 Site: [Nom du site]
 Slogan: [Slogan]
 
-Content: [Node en cours] (node)
+Content: [Node en cours si disponible]
 Type: [Content type]
 Tags: [Taxonomies]
-
-Existing content on the site (USE ONLY THESE URLS):
-- [Titre 1] → [URL réelle]
-- [Titre 2] → [URL réelle]
-...
-
-IMPORTANT: Only create links to URLs listed above.
 
 USER REQUEST:
 [Prompt original de l'utilisateur]
 ```
+
+**~200 tokens** : Juste l'essentiel pour contextualiser la demande.
+
+### Outils MCP à la demande
+
+L'IA découvre et utilise automatiquement les outils disponibles :
+
+**search_drupal_content** (Phase 3 - En développement)
+- Recherche full-text via Search API
+- Scoring, stemming, pertinence optimale
+- Filtres par content_type, taxonomies
+- Performance < 50ms sur 100k+ articles
+
+**get_related_content**
+- Contenu similaire basé sur taxonomies partagées
+- Filtrable par type de contenu
+
+**suggest_internal_links**
+- Analyse du texte et suggestions de liens internes
+- Évite auto-liens
+
+**analyze_content_seo**
+- Analyse SEO complète (titre, meta, keywords)
+- Suggestions d'amélioration
+
+**get_content_style**
+- Analyse du style éditorial du site
+- Patterns de titres et tone
 
 ## Architecture
 
@@ -177,13 +198,22 @@ Implémenter `ContextCollectorInterface` et enregistrer comme service avec tag `
 - Liens inventés vers `/guide-des-bars`, `/meilleures-tapas` (404)
 - Contenu générique sans lien avec le site
 - Aucune suggestion de contenu existant
+- Contexte non pertinent ou absent
 
-### Après AI Context
+### Après AI Context (Phase 1-2)
 
-- Liens uniquement vers contenus réels (`/node/1`, `/node/2`, etc.)
-- Suggestions basées sur taxonomies existantes
-- Respect du style éditorial du site
-- Analyse SEO contextuelle
+- Liens vers contenus réels listés dans le contexte
+- Contexte automatique mais limité à 10 contenus récents
+- Analyse SEO et style disponibles via MCP
+
+### Vision Phase 3 (MCP + Search API)
+
+- L'IA **décide** quand chercher du contenu
+- L'IA **formule** la requête optimale
+- Recherche intelligente : scoring, stemming, pertinence
+- Scalable : 15 000+ articles sans problème
+- Économie de tokens : contexte minimal + recherche ciblée
+- Performance : < 50ms pour recherche full-text
 
 ## Contribution
 

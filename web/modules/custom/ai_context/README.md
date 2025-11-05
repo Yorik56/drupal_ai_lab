@@ -4,10 +4,13 @@ Provides context-aware prompt generation for the AI module with Drupal content, 
 
 ## Features
 
-- Collects Drupal site context (name, slogan, configuration)
-- Collects entity metadata (nodes, taxonomy terms)
-- Automatically enriches AI prompts with relevant context
-- Integrates seamlessly with AI CKEditor
+- Provides lightweight automatic context (site info, current node)
+- Exposes intelligent MCP tools for on-demand content search
+- Search API integration for scalable full-text search (Phase 3)
+- Related content discovery via taxonomies
+- Internal link suggestions with relevance scoring
+- SEO content analysis
+- Editorial style analysis
 - Cached for performance
 - Permission-aware (respects Drupal access control)
 
@@ -27,13 +30,23 @@ drush cr
 
 ### Automatic Integration with CKEditor
 
-Once enabled, the module automatically enriches all AI CKEditor requests with Drupal context.
+Once enabled, the module provides lightweight context to AI CKEditor requests and exposes MCP tools for intelligent content discovery.
 
-When editing content with CKEditor AI tools (Tone, Summarize, etc.), the AI will receive:
+**Automatic context (minimal, ~200 tokens):**
 - Site name and slogan
-- Current content type and metadata
+- Current node metadata (if editing existing content)
 - Associated taxonomy terms
 - Publication status
+
+**MCP tools (on-demand):**
+The AI can intelligently call these tools when needed:
+- `search_drupal_content` - Full-text search via Search API (Phase 3)
+- `get_related_content` - Find similar content by taxonomies
+- `suggest_internal_links` - Suggest relevant internal links
+- `analyze_content_seo` - SEO analysis and recommendations
+- `get_content_style` - Editorial style patterns
+
+This hybrid approach combines instant context with intelligent, on-demand content discovery.
 
 ### Manual Usage in Custom Code
 
@@ -167,24 +180,31 @@ ddev exec vendor/bin/phpunit -c web/core web/modules/custom/ai_context/tests/src
 
 See `docs/roadmap.md` at the project root for the complete development roadmap.
 
-### Phase 1 (Current)
+### Phase 1 (Complete)
 - ✅ Core service implementation
 - ✅ Basic collectors (Site, Node, Taxonomy)
 - ✅ CKEditor integration
-- ⏳ Unit and kernel tests
-- ⏳ Documentation
+- ✅ Unit tests
+- ✅ Documentation
 
-### Phase 2 (Planned)
-- Plugin system for collectors
-- Internal links collector
-- SEO metadata collector
-- Menu structure collector
+### Phase 2 (Complete)
+- ✅ MCP plugin DrupalContext
+- ✅ 5 MCP tools (get_current_context, get_related_content, suggest_internal_links, analyze_content_seo, get_content_style)
+- ✅ MCP resource (drupal://context/site)
+- ✅ Validated in production
+
+### Phase 3 (In Progress)
+- 🚧 Search API integration
+- 🚧 MCP plugin SearchApiContent
+- 🚧 search_drupal_content tool (full-text search)
+- 🚧 Simplify CKEditorContextSubscriber (remove collectAvailableContent)
+- 🚧 Verify AI ↔ MCP integration flow
+
+### Phase 4 (Planned)
 - Admin UI for configuration
-
-### Phase 3 (Planned)
-- AI Agents (InternalLinkAgent, SeoAgent, StyleGuideAgent)
-- Advanced CKEditor integration
-- MCP (Model Context Protocol) support
+- Advanced configuration options
+- Performance benchmarks
+- Contribution to drupal/ai project
 
 ## Contributing
 
