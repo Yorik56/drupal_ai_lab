@@ -133,8 +133,23 @@ class CKEditorContextSubscriber implements EventSubscriberInterface {
         $property->setAccessible(TRUE);
         $property->setValue($request, $new_content);
 
-        $this->logger->warning('🎉 AI Context - Context enrichment applied to CKEditor AI request for plugin: @plugin', [
+        // Force clear the content cache.
+        if (method_exists($request, 'initialize')) {
+          $request->initialize(
+            $request->query->all(),
+            $request->request->all(),
+            $request->attributes->all(),
+            $request->cookies->all(),
+            $request->files->all(),
+            $request->server->all(),
+            $new_content
+          );
+        }
+
+        $this->logger->warning('🎉 AI Context - Context enrichment applied | Original: @original | Enriched: @enriched', [
           '@plugin' => $options['plugin'] ?? 'unknown',
+          '@original' => substr($original_prompt, 0, 50) . '...',
+          '@enriched' => substr($enriched_prompt, 0, 100) . '...',
         ]);
       }
     }
