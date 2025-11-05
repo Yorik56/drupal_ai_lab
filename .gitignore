@@ -6,6 +6,7 @@
 /web/modules/contrib
 /web/themes/contrib
 /web/profiles/contrib
+/web/config/sync/key.key.dev_key.yml
 /vendor/
 # Config
 # Note: config/sync is NOT ignored (we want to version it)
