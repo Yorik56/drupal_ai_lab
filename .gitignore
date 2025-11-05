@@ -6,10 +6,13 @@
 /web/modules/contrib
 /web/themes/contrib
 /web/profiles/contrib
-/web/config/sync/key.key.dev_key.yml
 /vendor/
+# Environment variables (contains sensitive keys)
+.env
+
 # Config
-# Note: config/sync is NOT ignored (we want to version it)
+# Note: config/sync is mostly versioned EXCEPT sensitive keys
+config/sync/key.*
 
 # DDEV - Ignorer les fichiers générés et données locales
 .ddev/.*.yaml
