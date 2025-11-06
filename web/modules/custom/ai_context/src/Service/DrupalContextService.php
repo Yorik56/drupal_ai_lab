@@ -62,8 +62,9 @@ class DrupalContextService implements DrupalContextServiceInterface {
       );
     }
 
-    // Collect recent published content to avoid hallucinated links.
-    $context['available_content'] = $this->collectAvailableContent($options);
+    // Note: available_content collection removed in favor of MCP search_drupal_content tool.
+    // This provides intelligent, on-demand content search via Search API with scoring and relevance.
+    // AI can now call the search_drupal_content MCP tool when it needs to find related content.
 
     // Allow other modules to alter the context.
     $this->moduleHandler->alter('ai_context_collect', $context, $options);
@@ -257,14 +258,8 @@ class DrupalContextService implements DrupalContextServiceInterface {
       }
     }
 
-    // Format available content to prevent hallucinated links.
-    if (!empty($context['available_content'])) {
-      $lines[] = "\nExisting content on the site (USE ONLY THESE URLS for internal links):";
-      foreach ($context['available_content'] as $content) {
-        $lines[] = "- {$content['title']} → {$content['url']}";
-      }
-      $lines[] = "\nIMPORTANT: Only create links to URLs listed above. Do not invent URLs.";
-    }
+    // Note: available_content formatting removed.
+    // AI can now use the search_drupal_content MCP tool to find relevant content on-demand.
 
     return implode("\n", $lines);
   }
@@ -312,43 +307,6 @@ class DrupalContextService implements DrupalContextServiceInterface {
     }
 
     return $tags;
-  }
-
-  /**
-   * Collects available content to prevent hallucinated links.
-   *
-   * @param array $options
-   *   The options array.
-   *
-   * @return array
-   *   Array of available content with titles and paths.
-   */
-  protected function collectAvailableContent(array $options): array {
-    try {
-      $node_storage = $this->entityTypeManager->getStorage('node');
-      $query = $node_storage->getQuery()
-        ->accessCheck(TRUE)
-        ->condition('status', 1)
-        ->sort('changed', 'DESC')
-        ->range(0, 10);
-
-      $nids = $query->execute();
-      $nodes = $node_storage->loadMultiple($nids);
-
-      $content_list = [];
-      foreach ($nodes as $node) {
-        $content_list[] = [
-          'title' => $node->getTitle(),
-          'url' => $node->toUrl()->toString(),
-          'type' => $node->bundle(),
-        ];
-      }
-
-      return $content_list;
-    }
-    catch (\Exception $e) {
-      return [];
-    }
   }
 
 }

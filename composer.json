@@ -26,6 +26,7 @@
         "drupal/gin": "^5.0",
         "drupal/gin_toolbar": "^3.0",
         "drupal/mcp": "^1.2",
+        "drupal/search_api": "^1.40",
         "drush/drush": "^13.6"
     },
     "conflict": {

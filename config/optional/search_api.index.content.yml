@@ -1,0 +1,194 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - search_api.server.database
+    - core.entity_view_mode.node.search_index
+  module:
+    - node
+    - search_api
+id: content
+name: 'Content Index'
+description: 'Index for searching node content with full-text capabilities.'
+read_only: false
+field_settings:
+  title:
+    label: Title
+    datasource_id: 'entity:node'
+    property_path: title
+    type: text
+    boost: 8.0
+  body:
+    label: Body
+    datasource_id: 'entity:node'
+    property_path: body
+    type: text
+    boost: 1.0
+  type:
+    label: 'Content type'
+    datasource_id: 'entity:node'
+    property_path: type
+    type: string
+  status:
+    label: 'Publishing status'
+    datasource_id: 'entity:node'
+    property_path: status
+    type: boolean
+  created:
+    label: 'Authored on'
+    datasource_id: 'entity:node'
+    property_path: created
+    type: date
+  changed:
+    label: Changed
+    datasource_id: 'entity:node'
+    property_path: changed
+    type: date
+  node_grants:
+    label: 'Node access information'
+    property_path: search_api_node_grants
+    type: string
+    indexed_locked: true
+    type_locked: true
+    hidden: true
+  rendered_item:
+    label: 'Rendered HTML output'
+    property_path: rendered_item
+    type: text
+    configuration:
+      roles:
+        - anonymous
+      view_mode:
+        'entity:node':
+          article: search_index
+          page: search_index
+datasource_settings:
+  'entity:node':
+    plugin_id: 'entity:node'
+    bundles:
+      default: true
+      selected: []
+processor_settings:
+  add_url:
+    weights:
+      preprocess_index: -30
+  aggregated_field:
+    weights:
+      add_properties: 20
+  content_access:
+    weights:
+      preprocess_index: -6
+      preprocess_query: -4
+  entity_status:
+    weights:
+      preprocess_index: -10
+  html_filter:
+    weights:
+      preprocess_index: -3
+      preprocess_query: -6
+    fields:
+      - rendered_item
+      - body
+    title: false
+    alt: false
+    tags:
+      b: 2
+      h1: 5
+      h2: 3
+      h3: 2
+      strong: 2
+  ignorecase:
+    weights:
+      preprocess_index: -20
+      preprocess_query: -20
+    fields:
+      - title
+      - body
+      - rendered_item
+  rendered_item:
+    weights:
+      add_properties: 0
+      pre_index_save: -10
+  stemmer:
+    weights:
+      preprocess_index: 0
+      preprocess_query: 0
+    fields:
+      - title
+      - body
+      - rendered_item
+    exceptions:
+      texan: texa
+      texans: texa
+  stopwords:
+    weights:
+      preprocess_index: -5
+      preprocess_query: -2
+    fields:
+      - title
+      - body
+      - rendered_item
+    stopwords:
+      - a
+      - an
+      - and
+      - are
+      - as
+      - at
+      - be
+      - but
+      - by
+      - for
+      - if
+      - in
+      - into
+      - is
+      - it
+      - 'no'
+      - not
+      - of
+      - 'on'
+      - or
+      - s
+      - such
+      - t
+      - that
+      - the
+      - their
+      - then
+      - there
+      - these
+      - they
+      - this
+      - to
+      - was
+      - will
+      - with
+  tokenizer:
+    weights:
+      preprocess_index: -6
+      preprocess_query: -6
+    fields:
+      - title
+      - body
+      - rendered_item
+    spaces: ''
+    overlap_cjk: 1
+    minimum_word_size: '3'
+  transliteration:
+    weights:
+      preprocess_index: -20
+      preprocess_query: -20
+    fields:
+      - title
+      - body
+      - rendered_item
+tracker_settings:
+  default:
+    indexing_order: fifo
+server: database
+options:
+  cron_limit: 50
+  index_directly: false
+  track_changes_in_references: true
+
