@@ -1,0 +1,9 @@
+mcp_mode: 'direct'
+mcp_plugins:
+  search_api_content:
+    enabled: true
+    limit: 5
+  drupal_context:
+    enabled: true
+max_tool_iterations: 3
+

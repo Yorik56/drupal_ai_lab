@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\ai_context\EventSubscriber;
 
 use Drupal\ai_context\Service\DrupalContextServiceInterface;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
@@ -33,11 +34,14 @@ class CKEditorContextSubscriber implements EventSubscriberInterface {
    *   The entity type manager.
    * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $loggerFactory
    *   The logger factory.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The config factory.
    */
   public function __construct(
     protected DrupalContextServiceInterface $contextService,
     protected EntityTypeManagerInterface $entityTypeManager,
     LoggerChannelFactoryInterface $loggerFactory,
+    protected ConfigFactoryInterface $configFactory,
   ) {
     $this->logger = $loggerFactory->get('ai_context');
   }
@@ -61,22 +65,21 @@ class CKEditorContextSubscriber implements EventSubscriberInterface {
     $request = $event->getRequest();
     $path = $request->getPathInfo();
 
-    // DEBUG: Log all requests to see what routes are called.
-    if (strpos($path, 'ai-ckeditor') !== FALSE) {
-      $this->logger->warning('🔍 AI Context Debug - Path: @path', [
-        '@path' => $path,
-      ]);
-    }
-
     // Only process AI CKEditor requests - check path instead of route name.
     // Pattern: /api/ai-ckeditor/request/{editor}/{plugin}
     if (!preg_match('#^/api/ai-ckeditor/request/#', $path)) {
       return;
     }
 
-    $this->logger->warning('✅ AI Context - Processing CKEditor request for path: @path', [
-      '@path' => $path,
-    ]);
+    // Check MCP mode - if Full, let the controller handle everything.
+    $mcp_mode = $this->configFactory->get('ai_context.settings')->get('mcp_mode') ?? 'direct';
+    
+    if ($mcp_mode === 'full') {
+      $this->logger->info('🎯 MCP Full mode: Subscriber skipping, controller handles everything');
+      return;
+    }
+
+    $this->logger->info('⚡ MCP Direct mode: Subscriber enriching context');
 
     try {
       // Get the request data.

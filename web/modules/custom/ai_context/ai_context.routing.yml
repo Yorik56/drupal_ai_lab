@@ -1,0 +1,13 @@
+ai_ckeditor.do_request:
+  methods: [ POST ]
+  path: '/api/ai-ckeditor/request/{editor}/{ai_ckeditor_plugin}'
+  defaults:
+    _title: 'AI CKEditor Request'
+    _controller: '\Drupal\ai_context\Controller\AiCKEditorMcpController::doRequest'
+  requirements:
+    _permission: 'use ai ckeditor'
+  options:
+    parameters:
+      ai_ckeditor_plugin:
+        type: ai_ckeditor_plugin
+

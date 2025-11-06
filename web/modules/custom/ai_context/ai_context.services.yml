@@ -14,6 +14,7 @@ services:
       - '@ai_context.context_service'
       - '@entity_type.manager'
       - '@logger.factory'
+      - '@config.factory'
     tags:
       - { name: event_subscriber }
 
@@ -38,12 +39,4 @@ services:
       - '@entity_type.manager'
     tags:
       - { name: ai_context_collector }
-
-  ai_context.provider_decorator:
-    class: Drupal\ai_context\Service\AiProviderDecorator
-    decorates: ai.provider
-    decoration_priority: 100
-    arguments:
-      - '@ai_context.provider_decorator.inner'
-      - '@plugin.manager.mcp'
 
