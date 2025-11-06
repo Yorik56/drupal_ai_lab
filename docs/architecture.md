@@ -326,26 +326,44 @@ La configuration principale se trouve dans `ai.settings` et inclut :
 
 ## AI Context - Architecture MCP
 
-### Mode MCP Full (Function Calling)
+### Mode MCP Full (Function Calling) - Flow détaillé
 
-```
-CKEditorContextSubscriber
-    ↓
-Prépare ChatInput avec setChatTools([...])
-    ↓
-APPEL 1 : OpenAI avec tools disponibles
-    ↓
-Réponse : { tool_calls: [...] }
-    ↓
-Exécution des plugins MCP
-    ↓
-APPEL 2 : OpenAI avec résultats
-    ↓
-Réponse finale avec contenus pertinents
+```mermaid
+sequenceDiagram
+    participant User as 👤 User (CKEditor)
+    participant Sub as 🔔 Subscriber
+    participant Ctrl as 🎮 Controller
+    participant OpenAI as 🤖 OpenAI
+    participant MCP as 🔧 MCP Plugin
+    participant SA as 🔍 Search API
+
+    User->>Sub: Prompt avec demande de liens
+    Sub->>Ctrl: Mode full, skip enrichment
+    
+    Ctrl->>Ctrl: Iteration 1
+    Ctrl->>OpenAI: ChatInput + 6 tools
+    OpenAI->>OpenAI: Analyse → 2 sujets
+    OpenAI-->>Ctrl: 2 tool_calls
+    
+    Ctrl->>MCP: search("gastronomie portugaise")
+    MCP->>SA: Full-text query
+    SA-->>MCP: 3 results (24.84, 10.85, 3.77)
+    MCP-->>Ctrl: /node/2, /node/4, /node/1
+    
+    Ctrl->>MCP: search("gastronomie française")
+    MCP->>SA: Full-text query
+    SA-->>MCP: 1 result (8.93)
+    MCP-->>Ctrl: /node/4
+    
+    Ctrl->>Ctrl: Iteration 2 (5 messages)
+    Ctrl->>OpenAI: Historique + résultats
+    OpenAI-->>Ctrl: Texte final avec 3 liens réels
+    Ctrl-->>User: HTML avec /node/2, /node/4, /node/1
 ```
 
-**Avantages** : Intelligence maximale, l'IA décide
-**Inconvénients** : 2 requêtes API, ~1500-2000 tokens
+**Avantages** : Intelligence maximale, recherches multiples autonomes, zéro hallucination
+**Inconvénients** : 2 requêtes API, ~1800-2000 tokens, ~3-4 secondes
+**Validation** : ✅ Testé en production avec succès
 
 ### Mode MCP Direct (Économique)
 

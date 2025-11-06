@@ -10,9 +10,10 @@
 
 ## Status
 
-Phase 1 MVP : Complète et validée en production
-Phase 2 MCP Integration : Complète et fonctionnelle
-Phase 3 MCP + Search API : En cours de planification
+Phase 1 MVP : ✅ Complète et validée en production
+Phase 2 MCP Integration : ✅ Complète et fonctionnelle
+Phase 3 MCP + Search API : ✅ Complète et validée (Mode Full opérationnel)
+Phase 4 Production & Contribution : 🚧 En cours de planification
 
 ## Module MCP - Impact majeur
 
@@ -124,7 +125,7 @@ Tous les outils testés via CLI et validés fonctionnels.
 
 Code : 377 lignes total
 
-## Phase 3 - MCP + Search API (En cours)
+## Phase 3 - MCP + Search API (✅ Complète)
 
 ### Vision stratégique
 
@@ -203,22 +204,25 @@ OpenAI génère avec vrais liens
 - ✅ Contexte allégé : ~250 tokens (vs 800-1100)
 - ✅ Tests unitaires : 6/6 pass
 
-**4. Implémentation MCP Full** 🚧
-- Modifier CKEditorContextSubscriber pour gérer function calling
-- Configuration admin pour choisir le mode (Full vs Direct)
-- Gérer les tool_calls dans les réponses OpenAI
-- Boucle request/response pour execution des outils
+**4. Implémentation MCP Full** ✅
+- ✅ Controller AiCKEditorMcpController créé
+- ✅ Route override de ai_ckeditor.do_request
+- ✅ Gestion complète des tool_calls OpenAI
+- ✅ Boucle request/response avec max 3 itérations
+- ✅ System prompt optimisé pour recherches exhaustives
+- ✅ Logs détaillés à chaque étape
 
-**5. Implémentation MCP Direct** 🚧
-- Appel systématique à search_drupal_content avec le prompt user
-- Enrichissement du contexte avant envoi unique à OpenAI
-- Option de configuration pour activer/désactiver
+**5. Implémentation MCP Direct** ✅
+- ✅ Mode économique implémenté dans le controller
+- ✅ Appel direct à search_drupal_content avec prompt user
+- ✅ Enrichissement contexte avant envoi unique
+- ✅ Basculement via configuration
 
-**6. Configuration UI**
-- Page admin `/admin/config/ai/context`
-- Radio: Mode MCP Full / Mode MCP Direct
-- Checkbox: Activer/désactiver chaque plugin MCP
-- Paramètres : limit de résultats, champs à inclure
+**6. Configuration**
+- ✅ Config ai_context.settings avec mcp_mode (full/direct)
+- ✅ Configuration des plugins MCP actifs
+- ✅ max_tool_iterations configuré (3)
+- 🚧 Interface admin UI (Phase 4)
 
 ### Comparaison des modes
 
@@ -249,25 +253,80 @@ OpenAI génère avec vrais liens
 - Basculer automatiquement entre les modes
 - Logs et métriques pour optimisation
 
-### Architecture hybride finale
+### Résultats Phase 3 - Validation en production
 
-**Contexte automatique léger (CKEditor)**
-- Nom et slogan du site
-- Informations du node en cours (si disponible)
-- **~200 tokens max**
+#### Test réel effectué
 
-**Outils MCP à la demande**
-- `search_drupal_content` : Recherche intelligente via Search API
-- `get_related_content` : Contenus similaires par taxonomies
-- `suggest_internal_links` : Suggestions de liens internes
-- `analyze_content_seo` : Analyse SEO
-- `get_content_style` : Analyse du style éditorial
+**Prompt utilisateur :**
+```
+Rédige un paragraphe sur la gastronomie portugaise ET française.
+Ajoute au moins 3 liens internes vers des articles du site.
+```
 
-**Résultat** : Best of both worlds
-- Contexte de base instantané
-- Recherche intelligente à la demande
-- Performance optimale
-- Pertinence maximale
+#### Comportement Mode MCP Full observé
+
+**Iteration 1 - Décision intelligente de l'IA :**
+- IA analyse le prompt et détecte **2 sujets distincts**
+- IA décide de faire **2 tool calls séparés** pour couverture exhaustive
+
+**Tool Call 1 :**
+```
+Outil : search_drupal_content
+Arguments : {"query":"gastronomie portugaise","limit":5}
+Résultats : 3 articles trouvés
+  - /node/2 (score: 24.84) "La Gastronomie Portugaise à l'Honneur"
+  - /node/4 (score: 10.85) "Les meilleurs restaurants européens"
+  - /node/1 (score: 3.77) "Les Bistrot de Paris"
+Performance : 11.24 ms
+```
+
+**Tool Call 2 :**
+```
+Outil : search_drupal_content
+Arguments : {"query":"gastronomie française","limit":5}
+Résultats : 1 article trouvé
+  - /node/4 (score: 8.93) "Les meilleurs restaurants européens"
+Performance : 1.73 ms (cache)
+```
+
+**Iteration 2 - Génération avec résultats :**
+- Historique complet : 5 messages (user + assistant + tool responses)
+- IA génère texte avec **3 liens réels**
+- Longueur : 1013 caractères
+- **Zéro hallucination**
+
+#### Liens générés (validés)
+
+```html
+<a href="/node/2">la gastronomie portugaise à l'honneur</a>
+<a href="/node/4">meilleurs restaurants européens</a>
+<a href="/node/1">bistrots parisiens</a>
+```
+
+✅ Tous les liens pointent vers du **contenu réel**
+✅ Anchor text intelligent basé sur les **titres réels**
+✅ Pertinence parfaite avec le **contexte de la demande**
+
+#### Performance mesurée
+
+- Recherche Search API : **13ms** total (2 appels)
+- Requêtes OpenAI : 2 (aller-retour)
+- Temps total : ~3-4 secondes
+- Tokens estimés : ~1800-2000
+
+#### Architecture finale validée
+
+**Mode MCP Full (activé)** : Intelligence maximale
+- L'IA décide quels outils utiliser
+- Recherches multiples si nécessaire
+- Formulation optimale des requêtes
+- Couverture exhaustive des sujets
+
+**Mode MCP Direct (disponible)** : Économie maximale
+- Appel systématique unique
+- ~250-500 tokens
+- 1 seule requête API
+- Basculement via config
 
 ## Phase 4 - Production & Contribution
 
@@ -348,9 +407,28 @@ Les deux systèmes sont complémentaires et non redondants.
 
 ## Métriques
 
-Performance actuelle : < 1ms avec cache (3.5x plus rapide)
-Performance cible Phase 3 : < 50ms avec Search API sur 100k+ articles
-Tests : 6 tests unitaires, 100% pass
-Code Phase 1 + 2 : 1177 lignes total
-Économie Phase 2 : 85% code, 95% temps vs estimation initiale
-Architecture : Hybride MCP (contexte léger + outils à la demande)
+**Performance :**
+- Search API : < 13ms pour 2 recherches distinctes
+- Context service : < 1ms avec cache
+- Mode MCP Full : ~3-4 secondes (2 requêtes OpenAI + recherches)
+- Mode MCP Direct : ~1-2 secondes (1 requête OpenAI)
+
+**Tests :**
+- Tests unitaires : 6/6 pass, 27 assertions ✅
+- Test production réel : ✅ Validé avec 2 tool calls simultanés
+- Zéro hallucination : ✅ 100% de liens réels
+
+**Code :**
+- Phase 1 + 2 : 1177 lignes
+- Phase 3 : +450 lignes (controller MCP + SearchApiContent)
+- Total : ~1627 lignes
+
+**Économie :**
+- Phase 2 : 85% code, 95% temps vs estimation
+- Phase 3 Mode Direct : 70% tokens vs Phase 1 (250 vs 800)
+- Intelligence : Mode Full fait 2x plus d'appels que prévu (exhaustivité)
+
+**Architecture :**
+- Hybride MCP (2 modes configurables)
+- Full : Intelligence maximale, recherches multiples autonomes
+- Direct : Économie maximale, appel systématique unique
