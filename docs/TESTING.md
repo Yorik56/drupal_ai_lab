@@ -139,8 +139,11 @@ ddev drush search-api:index
 ### Tester l'outil MCP SearchApiContent
 
 ```bash
-# search_drupal_content (une fois implémenté)
-ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('search_api_content'); \$r = \$p->executeTool('search_drupal_content', ['query' => 'drupal ai', 'limit' => 5]); echo \$r['content'][0]['text'];"
+# Recherche simple
+ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('search_api_content'); \$r = \$p->executeTool('search_drupal_content', ['query' => 'restaurant', 'limit' => 5]); echo \$r['content'][0]['text'];"
+
+# Recherche avec filtres
+ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('search_api_content'); \$r = \$p->executeTool('search_drupal_content', ['query' => 'gastronomie', 'content_types' => ['article'], 'limit' => 3]); echo \$r['content'][0]['text'];"
 ```
 
 ### Vérifier performance de recherche
@@ -148,6 +151,96 @@ ddev drush eval "\$p = \Drupal::service('plugin.manager.mcp')->createInstance('s
 ```bash
 # Mesurer le temps de recherche
 ddev drush eval "\$start = microtime(true); \$index = \Drupal\search_api\Entity\Index::load('content'); \$query = \$index->query(); \$query->keys('test'); \$results = \$query->execute(); echo 'Time: ' . round((microtime(true) - \$start) * 1000, 2) . 'ms, Results: ' . \$results->getResultCount();"
+```
+
+## Tests Mode MCP Full (Phase 3.2)
+
+### Activer le mode MCP Full
+
+```bash
+ddev drush config:set ai_context.settings mcp_mode full -y
+ddev drush cr
+```
+
+### Simuler un appel CKEditor avec function calling
+
+```bash
+# Tester que les tools sont exposés
+ddev drush eval "
+\$input = new \Drupal\ai\OperationType\Chat\ChatInput([
+  new \Drupal\ai\OperationType\Chat\ChatMessage('user', 'Write about Portuguese restaurants')
+]);
+// Vérifier que setChatTools() est appelé dans le subscriber
+print_r(\$input->getChatTools());
+"
+```
+
+### Vérifier les logs de tool calls
+
+```bash
+ddev drush watchdog:tail --filter=ai_context
+```
+
+Rechercher les logs :
+```
+✅ MCP Full mode: Tools exposed to OpenAI
+✅ OpenAI tool_call received: search_drupal_content
+✅ Executing MCP tool: search_drupal_content
+✅ Tool results returned to OpenAI
+```
+
+## Tests Mode MCP Direct (Phase 3.2)
+
+### Activer le mode MCP Direct
+
+```bash
+ddev drush config:set ai_context.settings mcp_mode direct -y
+ddev drush cr
+```
+
+### Vérifier l'appel systématique
+
+```bash
+ddev drush watchdog:tail --filter=ai_context
+```
+
+Rechercher les logs :
+```
+✅ MCP Direct mode: Calling search_drupal_content with user prompt
+✅ Search results added to context
+✅ Single call to OpenAI with enriched context
+```
+
+## Benchmarks comparatifs
+
+### Mesurer les tokens utilisés
+
+```bash
+# Mode Full
+ddev drush eval "
+\$config = \Drupal::configFactory()->getEditable('ai_context.settings');
+\$config->set('mcp_mode', 'full')->save();
+// Faire un appel CKEditor et mesurer
+echo 'Tokens Mode Full: ' . \$tokens;
+"
+
+# Mode Direct
+ddev drush eval "
+\$config = \Drupal::configFactory()->getEditable('ai_context.settings');
+\$config->set('mcp_mode', 'direct')->save();
+// Faire un appel CKEditor et mesurer
+echo 'Tokens Mode Direct: ' . \$tokens;
+"
+```
+
+### Mesurer la latence
+
+```bash
+# Mode Full (2 requêtes)
+time curl -X POST "http://drupalai.ddev.site/api/ai-ckeditor/request/..."
+
+# Mode Direct (1 requête)
+time curl -X POST "http://drupalai.ddev.site/api/ai-ckeditor/request/..."
 ```
 
 ## Standards de code

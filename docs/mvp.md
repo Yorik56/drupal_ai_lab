@@ -35,11 +35,29 @@ USER REQUEST:
 
 **~200 tokens** : Juste l'essentiel pour contextualiser la demande.
 
-### Outils MCP à la demande
+### Outils MCP à la demande (2 modes)
 
-L'IA découvre et utilise automatiquement les outils disponibles :
+#### Mode MCP Full (Function Calling)
+L'IA **décide** quels outils utiliser et formule les requêtes optimales.
 
-**search_drupal_content** (Phase 3 - En développement)
+**Avantages :**
+- Intelligence maximale
+- Multi-outils si besoin
+- Requêtes optimisées
+
+**Coût :** ~1500-2000 tokens par requête
+
+#### Mode MCP Direct (Économique)
+Appel **systématique** à search_drupal_content avec le prompt user.
+
+**Avantages :**
+- 6-8x moins cher
+- 2x plus rapide
+- Simple et efficace
+
+**Coût :** ~250-500 tokens par requête
+
+**search_drupal_content** ✅
 - Recherche full-text via Search API
 - Scoring, stemming, pertinence optimale
 - Filtres par content_type, taxonomies

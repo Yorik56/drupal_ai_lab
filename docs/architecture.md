@@ -324,7 +324,95 @@ La configuration principale se trouve dans `ai.settings` et inclut :
 - Paramètres de modération
 - Configuration des fournisseurs
 
+## AI Context - Architecture MCP
+
+### Mode MCP Full (Function Calling)
+
+```
+CKEditorContextSubscriber
+    ↓
+Prépare ChatInput avec setChatTools([...])
+    ↓
+APPEL 1 : OpenAI avec tools disponibles
+    ↓
+Réponse : { tool_calls: [...] }
+    ↓
+Exécution des plugins MCP
+    ↓
+APPEL 2 : OpenAI avec résultats
+    ↓
+Réponse finale avec contenus pertinents
+```
+
+**Avantages** : Intelligence maximale, l'IA décide
+**Inconvénients** : 2 requêtes API, ~1500-2000 tokens
+
+### Mode MCP Direct (Économique)
+
+```
+CKEditorContextSubscriber
+    ↓
+Extrait le prompt user
+    ↓
+Appel direct au plugin MCP :
+  search_drupal_content(query: prompt)
+    ↓
+Résultats ajoutés au contexte
+    ↓
+APPEL UNIQUE : OpenAI avec contexte enrichi
+    ↓
+Réponse finale avec contenus pertinents
+```
+
+**Avantages** : 1 requête API, ~250-500 tokens, rapide
+**Inconvénients** : Appel systématique (peut être inutile)
+
+### Configuration
+
+```yaml
+# config/sync/ai_context.settings.yml
+mcp_mode: 'direct'  # ou 'full'
+mcp_plugins:
+  search_api_content:
+    enabled: true
+    limit: 5
+  drupal_context:
+    enabled: true
+```
+
 ## Extensibilité
+
+### Créer un plugin MCP
+
+1. Implémenter `McpPluginBase`
+2. Définir l'attribut `#[Mcp]`
+3. Implémenter `getTools()` pour exposer les outils
+4. Implémenter `executeTool()` pour exécuter la logique
+
+Exemple :
+```php
+#[Mcp(
+  id: 'my_plugin',
+  name: new TranslatableMarkup('My Plugin'),
+  description: new TranslatableMarkup('Description'),
+)]
+class MyPlugin extends McpPluginBase {
+  public function getTools(): array {
+    return [
+      new Tool(
+        name: 'my_tool',
+        description: 'What this tool does',
+        inputSchema: [...]
+      ),
+    ];
+  }
+  
+  public function executeTool(string $toolId, mixed $arguments): array {
+    // Logic here
+    return ['content' => [['type' => 'text', 'text' => $result]]];
+  }
+}
+```
 
 ### Créer un fournisseur d'IA
 

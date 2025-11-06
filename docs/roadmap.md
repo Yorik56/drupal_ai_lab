@@ -128,7 +128,10 @@ Code : 377 lignes total
 
 ### Vision stratégique
 
-Refonte complète de l'approche pour adopter une architecture MCP pure, éliminant l'injection automatique de contexte au profit d'une approche intelligente à la demande pilotée par l'IA.
+Implémentation de deux modes MCP pour offrir le meilleur équilibre entre intelligence et coût selon les besoins.
+
+**Mode MCP Full** : L'IA décide quels outils utiliser (intelligent, ~2000 tokens)
+**Mode MCP Direct** : Appel systématique aux outils pertinents (économique, ~250 tokens)
 
 ### Problématique identifiée
 
@@ -138,88 +141,113 @@ Refonte complète de l'approche pour adopter une architecture MCP pure, élimina
 
 ### Architecture cible
 
+#### Mode 1 : MCP Full (Function Calling)
+
 ```
-User dans CKEditor → Demande AI → Submit
+User dans CKEditor → "Write about Portuguese restaurants"
          ↓
-Requête vers AI Provider (OpenAI, Claude, etc.)
+CKEditorContextSubscriber intercepte
          ↓
-IA découvre outils MCP disponibles
+APPEL 1 à OpenAI :
+  - Prompt user
+  - Tools disponibles: [search_drupal_content, get_related_content, ...]
+  - Question: "Veux-tu utiliser un outil ?"
          ↓
-IA DÉCIDE d'appeler search_drupal_content
-Arguments: {keywords: [...], content_type: [...], limit: N}
+OpenAI répond avec tool_calls:
+  {name: "search_drupal_content", args: {query: "Portuguese restaurants"}}
          ↓
-Plugin MCP SearchApiContent
-  → Recherche via Search API
-  → Scoring, stemming, pertinence
-  → Filtres intelligents
+Exécution du plugin MCP
          ↓
-IA reçoit contenus pertinents + URLs + extraits
+APPEL 2 à OpenAI avec résultats
          ↓
-IA génère contenu formaté avec liens internes intelligents
+OpenAI génère avec vrais liens
 ```
+
+**Coût : ~1500-2000 tokens** | **Intelligence : Maximum**
+
+#### Mode 2 : MCP Direct (Économique)
+
+```
+User dans CKEditor → "Write about Portuguese restaurants"
+         ↓
+CKEditorContextSubscriber intercepte
+         ↓
+Appel DIRECT au plugin MCP avec le prompt:
+  search_drupal_content(query: "Write about Portuguese restaurants")
+         ↓
+Résultats ajoutés au contexte
+         ↓
+APPEL UNIQUE à OpenAI avec contexte enrichi
+         ↓
+OpenAI génère avec vrais liens
+```
+
+**Coût : ~250-500 tokens** | **Intelligence : Bonne**
 
 ### Objectifs Phase 3
 
-**1. Installation et configuration Search API**
-- Installer Search API + Search API DB (ou Solr)
-- Créer index sur nodes (title + body + taxonomies)
-- Configurer processors : HTML filter, Stemming, Stop words, Tokenizer
-- Configurer backend : Database avec full-text index (ou Solr pour performance ultime)
+**1. Installation et configuration Search API** ✅
+- ✅ Search API + Search API DB installés
+- ✅ Index créé sur nodes (title + body + type + status + dates)
+- ✅ Processors configurés : HTML filter, Stemming, Stop words, Tokenizer, Ignorecase
+- ✅ 4 nodes indexés, performance < 53ms
 
-**2. Créer plugin MCP SearchApiContent**
-- Path : `web/modules/custom/ai_context/src/Plugin/Mcp/SearchApiContent.php`
-- Outil : `search_drupal_content`
-- Input schema :
-  - `query` (string) : Requête de recherche full-text
-  - `content_types` (array, optional) : Filtrer par types de contenu
-  - `taxonomies` (array, optional) : Filtrer par termes de taxonomie
-  - `limit` (int, default 10) : Nombre de résultats
-  - `fields` (array, optional) : Champs à retourner
-- Output : Résultats avec score, titre, URL, extrait, taxonomies
+**2. Plugin MCP SearchApiContent** ✅
+- ✅ Créé : `web/modules/custom/ai_context/src/Plugin/Mcp/SearchApiContent.php`
+- ✅ Outil : `search_drupal_content` fonctionnel
+- ✅ Input : query, content_types, limit, fields
+- ✅ Output : Résultats avec score, titre, URL, extrait, performance
 
-**3. Vérifier intégration AI ↔ MCP**
-- Analyser comment AI CKEditor expose les outils MCP aux providers
-- Vérifier si OpenAI/Claude reçoivent la liste des tools disponibles
-- Tester le flow complet : CKEditor → AI → MCP tool call → Résultat
+**3. Simplification contexte** ✅
+- ✅ Retiré `collectAvailableContent()` (économie 70% tokens)
+- ✅ Contexte allégé : ~250 tokens (vs 800-1100)
+- ✅ Tests unitaires : 6/6 pass
 
-**4. Simplifier CKEditorContextSubscriber**
-- **Retirer** : `collectAvailableContent()` du contexte automatique
-- **Garder** : Informations de base du site (nom, slogan)
-- **Garder** : Entity context si disponible (node en cours d'édition)
-- **Objectif** : Contexte minimal, laisser l'IA décider quand chercher
+**4. Implémentation MCP Full** 🚧
+- Modifier CKEditorContextSubscriber pour gérer function calling
+- Configuration admin pour choisir le mode (Full vs Direct)
+- Gérer les tool_calls dans les réponses OpenAI
+- Boucle request/response pour execution des outils
 
-**5. Améliorer DrupalContext MCP**
-- Garder les outils actuels (get_related_content, suggest_internal_links, analyze_content_seo, get_content_style)
-- Ces outils restent utiles pour des analyses spécifiques
-- Mais pour la recherche générale : déléguer à SearchApiContent
+**5. Implémentation MCP Direct** 🚧
+- Appel systématique à search_drupal_content avec le prompt user
+- Enrichissement du contexte avant envoi unique à OpenAI
+- Option de configuration pour activer/désactiver
 
-### Avantages de l'approche
+**6. Configuration UI**
+- Page admin `/admin/config/ai/context`
+- Radio: Mode MCP Full / Mode MCP Direct
+- Checkbox: Activer/désactiver chaque plugin MCP
+- Paramètres : limit de résultats, champs à inclure
 
-**Performance**
-- Search API avec index optimisé : < 50ms même sur 100k+ articles
-- Pas de scan full table
-- Cache des résultats de recherche
+### Comparaison des modes
 
-**Pertinence**
-- Scoring intelligent basé sur TF-IDF ou BM25
-- Stemming : "running" trouve "run", "runner"
-- Stop words : ignore "le", "la", "the", "a"
-- Boost sur certains champs (titre > body)
+| Critère | MCP Full | MCP Direct |
+|---------|----------|------------|
+| **Intelligence** | Maximum - IA décide | Bonne - Appel systématique |
+| **Coût tokens** | ~1500-2000 tokens | ~250-500 tokens |
+| **Requêtes API** | 2 (aller-retour) | 1 (unique) |
+| **Latence** | ~3-5 secondes | ~1-2 secondes |
+| **Pertinence** | Meilleure - IA formule requête | Bonne - Utilise prompt user |
+| **Cas d'usage** | Tâches complexes | Tâches simples/courantes |
+| **Économie** | Optimale si besoin | Optimale toujours |
 
-**Scalabilité**
-- Fonctionne avec des millions d'articles
-- Facettes pour affiner les résultats
-- Pagination native
+### Stratégie recommandée
 
-**Intelligence**
-- L'IA décide QUAND chercher (pas de contexte gaspillé)
-- L'IA formule LA BONNE REQUÊTE (extraction de keywords intelligente)
-- L'IA utilise LES BONS FILTRES (content_type, taxonomies)
+**Mode MCP Full** : Production pour éditeurs expérimentés
+- Articles complexes nécessitant recherches multiples
+- Contenu nécessitant liens internes nombreux
+- Budget tokens acceptable
 
-**Économie de tokens**
-- Plus d'envoi de 10 contenus random à chaque requête
-- Contexte à la demande uniquement
-- Réduction significative des coûts API
+**Mode MCP Direct** : Par défaut et environnements à budget limité
+- Corrections simples (typos, formatage)
+- Génération standard de contenu
+- Maximum d'économies
+
+**Auto-détection** (Phase 4) :
+- Analyser le prompt pour détecter la complexité
+- Basculer automatiquement entre les modes
+- Logs et métriques pour optimisation
 
 ### Architecture hybride finale
 
